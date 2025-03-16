@@ -35,8 +35,8 @@ VideoToPPT is a magical screen capture tool that transforms educational videos, 
    - Press **ESC** to exit
 
 4. **Find your presentation:**
-   - Your slides are saved as "Introduction Module1.pptx"
-   - A backup is automatically maintained as "Introduction Module1_BACKUP.pptx"
+   - Your slides are saved as "Introduction Module1.pptx" (by default)
+   - A backup is automatically maintained as "Introduction Module1_BACKUP.pptx" (by default)
 
 ## 🎮 Controls
 

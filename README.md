@@ -4,14 +4,13 @@
 
 ## ✨ What is VideoToPPT?
 
-VideoToPPT is a magical screen capture tool that transforms educational videos, tutorials, and presentations into professional PowerPoint slides - instantly. Just press a key while watching your video, and the tool intelligently captures the video content, creating perfectly formatted slides.
+VideoToPPT is a magical screen capture tool that transforms **Coursera** videos, tutorials, and presentations into professional PowerPoint slides – instantly. Just press a key while watching your video, and the tool intelligently captures the video content, creating perfectly formatted slides.
 
 ## 🚀 Features
 
 - **🎯 Smart Video Detection** - Automatically finds the video area on your screen, even in browser windows
 - **⌨️ One-Key Capture** - Press END, F12, or 'p' to instantly take a perfectly framed screenshot
 - **🖼️ Full-Screen Slides** - Each capture fills the entire slide with no margins
-- **📱 Supports Any Video Source** - Works with Coursera, YouTube, local videos, webinars, and more
 - **🔄 Preserves Your Edits** - Make changes to your slides between sessions without losing them
 
 ## 🏃‍♂️ Quick Start
@@ -36,7 +35,7 @@ VideoToPPT is a magical screen capture tool that transforms educational videos, 
 
 4. **Find your presentation:**
    - Your slides are saved as "Introduction Module1.pptx" (by default)
-   - A backup is automatically maintained as "Introduction Module1_BACKUP.pptx" (by default)
+   - A Temp file is automatically maintained as "Introduction Module1_TEMP.pptx" when powerpoint is open (by default)
 
 ## 🎮 Controls
 

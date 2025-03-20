@@ -74,37 +74,39 @@ class VideoToPPT:
     def initialize_ppt(self):
         """Initialize the PowerPoint presentation - load existing if available, preserving user edits."""
         try:
-            ppt_filename = "Introduction Module1.pptx"
+            main_filename = "Introduction Module1.pptx"
+            temp_filename = "Introduction Module1_TEMP.pptx"
+            backup_filename = "Introduction Module1_BACKUP.pptx"
             
-            # Check if the presentation already exists
-            if os.path.exists(ppt_filename):
-                print(f"Loading existing presentation: {ppt_filename}")
+            # First try to load the main file
+            if os.path.exists(main_filename):
                 try:
-                    self.ppt = Presentation(ppt_filename)
-                    # Count existing slides
+                    print(f"Loading existing presentation: {main_filename}")
+                    self.ppt = Presentation(main_filename)
                     existing_slides = len(self.ppt.slides)
                     print(f"Found {existing_slides} existing slides")
-                    
-                    # Don't create a backup of the main file - this could overwrite user edits
-                    # Instead, we'll only create backups when adding new slides
+                    return
                 except PermissionError:
-                    print(f"WARNING: Could not open {ppt_filename} - it may be in use by PowerPoint.")
-                    print("Creating a new temporary presentation for this session.")
-                    self.ppt = Presentation()
-                    self.ppt.slide_width = Inches(13.33)  # Widescreen 16:9
-                    self.ppt.slide_height = Inches(7.5)
-            else:
-                # Create a new presentation if none exists
-                print("Creating new presentation")
-                self.ppt = Presentation()
-                self.ppt.slide_width = Inches(13.33)  # Widescreen 16:9
-                self.ppt.slide_height = Inches(7.5)
+                    print(f"Main file is open in PowerPoint, checking for temp file...")
+                    
+            # If main file doesn't exist or is locked, try temp file
+            if os.path.exists(temp_filename):
+                try:
+                    print(f"Loading temp file: {temp_filename}")
+                    self.ppt = Presentation(temp_filename)
+                    return
+                except:
+                    print("Could not load temp file")
+                    
+            # Create new presentation if no existing files found
+            print("Creating new presentation")
+            self.ppt = Presentation()
+            self.ppt.slide_width = Inches(13.33)  # Widescreen 16:9
+            self.ppt.slide_height = Inches(7.5)
             
         except Exception as e:
             print(f"Error initializing PowerPoint: {e}")
             traceback.print_exc()
-            # Create a fresh presentation as fallback
-            print("Creating a new presentation due to error")
             self.ppt = Presentation()
             self.ppt.slide_width = Inches(13.33)
             self.ppt.slide_height = Inches(7.5)
@@ -316,7 +318,7 @@ class VideoToPPT:
                     self.running = False
                     break
                     
-                time.sleep(0.5)  # Adjust capture frequency as needed
+                time.sleep(0.1)  # Capture frequency as needed
                 
             # Final save when loop exits
             if not self.running:
@@ -328,9 +330,28 @@ class VideoToPPT:
             self.emergency_save()
     
     def is_duplicate(self, new_image):
-        """Duplicate detection removed as requested."""
-        # Always return False - feature disabled
-        return False
+        """Check if the new image is too similar to the last captured image."""
+        if not self.last_image:
+            return False
+            
+        try:
+            # Convert images to numpy arrays for comparison
+            new_array = np.array(new_image)
+            last_array = np.array(self.last_image)
+            
+            # Ensure both images are the same size
+            if new_array.shape != last_array.shape:
+                return False
+                
+            # Calculate structural similarity index
+            similarity = ssim(new_array, last_array, multichannel=True)
+            
+            # If similarity is above threshold, consider it a duplicate
+            return similarity > self.similarity_threshold
+            
+        except Exception as e:
+            print(f"Error in duplicate detection: {e}")
+            return False
     
     def add_to_presentation(self, image):
         """Add the captured image to PowerPoint presentation."""
@@ -366,56 +387,46 @@ class VideoToPPT:
     
     def save_ppt(self, final=True):
         """Save the PowerPoint presentation while preserving user edits."""
-        if self.ppt and len(self.images) > 0:  # Only save if we've added at least one image in this session
-            try:
-                if final:
-                    main_filename = "Introduction Module1.pptx"
-                    backup_filename = "Introduction Module1_BACKUP.pptx"
+        if not self.ppt:
+            return False
+        
+        try:
+            main_filename = "Introduction Module1.pptx"
+            temp_filename = "Introduction Module1_TEMP.pptx"
+            
+            if final:
+                try:
+                    # Try to save directly to main file
+                    self.ppt.save(main_filename)
+                    print(f"Saved to {main_filename}")
                     
-                    # Try to save to the main file
-                    try:
-                        # First backup the existing file if it exists
-                        if os.path.exists(main_filename):
-                            # Create single backup file (no timestamps)
-                            shutil.copy2(main_filename, backup_filename)
-                            print(f"Created backup: {backup_filename}")
+                    # Clean up temp file if it exists
+                    if os.path.exists(temp_filename):
+                        try:
+                            os.remove(temp_filename)
+                        except:
+                            pass
                         
-                        # Save to the main file
-                        self.ppt.save(main_filename)
-                        print(f"Presentation saved as {main_filename}")
-                        
-                        # Clean up any old temporary files
-                        for file in os.listdir():
-                            if file.startswith("Introduction Module1_TEMP_") and file.endswith(".pptx"):
-                                try:
-                                    os.remove(file)
-                                except:
-                                    pass
-                    except PermissionError:
-                        # File is locked (likely open in PowerPoint)
-                        # Save to a temporary file
-                        temp_save = f"Introduction Module1_TEMP.pptx"
-                        self.ppt.save(temp_save)
-                        print(f"\nWARNING: Could not save to {main_filename} because it appears to be open.")
-                        print(f"Your changes are saved in: {temp_save}")
-                        print("When you close PowerPoint, copy this file over the original.")
-                else:
-                    # For non-final saves, just update the backup
-                    backup_file = "Introduction Module1_BACKUP.pptx"
-                    self.ppt.save(backup_file)
-                    print(f"Backup saved as {backup_file}")
+                except PermissionError:
+                    # If main file is open, save to temp file
+                    self.ppt.save(temp_filename)
+                    print(f"\nWARNING: PowerPoint file is open.")
+                    print(f"Changes saved to: {temp_filename}")
+                    print("Close PowerPoint and copy this temp file over the original")
                 
-                # Clean up temp files if this is the final save
-                if final and os.path.exists('temp_screenshot.png'):
+            # Clean up temp screenshot if it exists
+            if os.path.exists('temp_screenshot.png'):
+                try:
                     os.remove('temp_screenshot.png')
+                except:
+                    pass
                 
-                return True
-            except Exception as e:
-                print(f"Error saving presentation: {e}")
-                traceback.print_exc()
-                self.emergency_save()
-                return False
-        return False
+            return True
+            
+        except Exception as e:
+            print(f"Error saving: {e}")
+            traceback.print_exc()
+            return False
         
     def emergency_save(self):
         """Last resort save attempt if something goes wrong."""
